@@ -1,9 +1,10 @@
 package entity;
 
 public class Funcionario {
-    private int id = 0;
-    private String nome = null;
-    private String email = null;
+    private int id;
+    private String nome;
+    private String email;
+
 
     public int getId() {
         return id;
