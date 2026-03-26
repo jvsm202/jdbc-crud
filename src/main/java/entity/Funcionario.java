@@ -5,6 +5,13 @@ public class Funcionario {
     private String nome;
     private String email;
 
+    public Funcionario(String nome, String email){
+        this.nome = nome;
+        this.email = email;
+    }
+
+    public Funcionario(){}
+
 
     public int getId() {
         return id;

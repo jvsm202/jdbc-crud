@@ -3,9 +3,12 @@ package dao;
 import entity.Funcionario;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
-public class FuncionarioDAO {
+public class FuncionarioDAO implements InterfaceDAO<Funcionario> {
+    private final String TABLE_NAME  = "funcionario";
 
     private Funcionario mapFuncionario(ResultSet resultSet) throws SQLException{
         Funcionario funcionario = new Funcionario();
@@ -15,8 +18,9 @@ public class FuncionarioDAO {
         return funcionario;
     }
 
-    public void insertFuncionario(Connection connection, Funcionario funcionario) throws SQLException {
-        String sql = "INSERT INTO funcionario (nome, email) VALUES (?, ?)";
+    @Override
+    public void save(Connection connection, Funcionario funcionario) throws SQLException {
+        String sql = "INSERT INTO " + TABLE_NAME + " (nome, email) VALUES (?, ?)";
         try(PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, funcionario.getNome());
             ps.setString(2, funcionario.getEmail());
@@ -27,8 +31,41 @@ public class FuncionarioDAO {
         }
     }
 
-    public void insertFuncionarioBatch(Connection connection, List<Funcionario> funcionarios) throws SQLException{
-        String sql = "INSERT INTO funcionario (nome, email) VALUES (?, ?)";
+    @Override
+    public Optional<Funcionario> findById(Connection connection, int id) throws SQLException {
+        String sql = "SELECT id, nome, email FROM " + TABLE_NAME + " WHERE id = ?";
+        try(PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try(ResultSet rs = ps.executeQuery()) {
+                if(rs.next()) return Optional.of(mapFuncionario(rs));
+                else return Optional.empty();
+            }
+        }
+    }
+
+    @Override
+    public void update(Connection connection, Funcionario funcionario) throws SQLException {
+        String sql = "UPDATE " + TABLE_NAME + " SET nome = ?, email = ? WHERE id = ?";
+        try(PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, funcionario.getNome());
+            ps.setString(2, funcionario.getEmail());
+            ps.setInt(3, funcionario.getId());
+            ps.executeUpdate();
+        }
+    }
+
+    @Override
+    public void deleteById(Connection connection, int id) throws SQLException {
+        String sql = "DELETE FROM " + TABLE_NAME + " WHERE id = ?";
+        try(PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        }
+    }
+
+    @Override
+    public void saveAll(Connection connection, Collection<Funcionario> funcionarios) throws SQLException{
+        String sql = "INSERT INTO " + TABLE_NAME + " (nome, email) VALUES (?, ?)";
         try(PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             for (Funcionario f : funcionarios){
                 ps.setString(1, f.getNome());
@@ -46,19 +83,9 @@ public class FuncionarioDAO {
         }
     }
 
-    public Funcionario getFuncionario(Connection connection, int id) throws SQLException {
-        String sql = "SELECT id, nome, email FROM funcionario WHERE id = ?";
-        try(PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, id);
-            try(ResultSet rs = ps.executeQuery()) {
-                if(rs.next()) return mapFuncionario(rs);
-                return null;
-            }
-        }
-    }
-
-    public List<Funcionario> getFuncionarios(Connection connection) throws SQLException {
-        String sql = "SELECT id, nome, email FROM funcionario";
+    @Override
+    public Collection<Funcionario> findAll(Connection connection) throws SQLException {
+        String sql = "SELECT id, nome, email FROM " + TABLE_NAME;
         try(PreparedStatement ps = connection.prepareStatement(sql)) {
             try(ResultSet rs = ps.executeQuery()){
                 List<Funcionario> funcionarios = new ArrayList<>();
@@ -70,21 +97,24 @@ public class FuncionarioDAO {
         }
     }
 
-    public boolean updateFuncionario(Connection connection, Funcionario funcionario) throws SQLException {
-        String sql = "UPDATE funcionario SET nome = ?, email = ? WHERE id = ? ";
+    @Override
+    public void deleteAll(Connection connection) throws SQLException{
+        String sql = "TRUNCATE TABLE " + TABLE_NAME;
         try(PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, funcionario.getNome());
-            ps.setString(2, funcionario.getEmail());
-            ps.setInt(3, funcionario.getId());
-            return ps.executeUpdate() > 0;
+            ps.executeUpdate();
         }
     }
 
-    public boolean deleteFuncionario(Connection connection, int id) throws SQLException {
-        String sql = "DELETE FROM funcionario WHERE id = ?";
-        try(PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, id);
-            return ps.executeUpdate() > 0;
+    @Override
+    public long count(Connection connection) throws SQLException{
+        String sql = "SELECT COUNT(*) FROM " + TABLE_NAME;
+        PreparedStatement ps = connection.prepareStatement(sql);
+        try(ResultSet rs = ps.executeQuery()) {
+            if(rs.next()){
+                return rs.getInt(1);
+            }
+            else return 0;
         }
     }
+
 }
